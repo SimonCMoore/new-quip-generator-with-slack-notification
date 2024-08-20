@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Lambda running on a schedule, schedule event defines a quip template to copy into a folder,
+   notifying a slack webhook tied to a slack channel, to notify of new instance of teamplte copied.
+
+    webhook: string;
+    quipToken: string;
+    quipTemplateId: string;
+    quipDocumentNamePrepend: string;
+    quipFolderId: string;
+    frequency: string;
+    dayOfWeek?: number;
+    dayOfMonth?: number;
+    text: string;
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 15
+
+    # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
+    LoggingConfig:
+      LogFormat: JSON
+Resources:
+  KMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting ScheduleV2 events
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: key-policy
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: kms:*
+            Resource: "*"
+        DeletionPolicy: Retain
+  QuipGenerateSlackNotify:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: quip-generate-slack-notify/
+      Handler: app.lambdaHandler
+      Runtime: nodejs20.x
+      Architectures:
+      - x86_64
+      Events:
+        ScheduleEvent:
+          Type: ScheduleV2
+          Properties:
+            KmsKeyArn: !Ref KMSKey  # Reference the KMS key resource
+            ScheduleExpression: "cron(35 17 ? * FRI *)"
+            Input: "{\"webhook\":\"xxx\",\"quipToken\":\"xxx\",\"quipTemplateId\":\"r5pyANChzggQ\",\"quipFolderId\":\"UgtCOdh2PEXn\",\"quipDocumentNamePrepend\":\"myquipDocumentNamePrepend\",\"frequency\":\"Weekly\",\"dayOfWeek\":2,\"dayOfMonth\":1,\"text\":\"My example doc OPS template copied to ssimmo-test-doc-gen folder, notifing ssimmoo-test channel\"}"
+        ScheduleEventOrgMonthly1:
+          Type: ScheduleV2
+          Properties:
+            KmsKeyArn: !Ref KMSKey  # Reference the KMS key resource
+            ScheduleExpression: "cron(35 17 15 * ? *)"
+            Input: "{\"dayOfMonth\":0,\"dayOfWeek\":2,\"frequency\":\"Monthly\",\"quipDocumentNamePrepend\":\"NGDE Knowledge Monthly Program Review - \",\"quipFolderId\":\"232HOLBkwysB\",\"quipTemplateId\":\"KWOiA5bIezAE\",\"quipToken\":\"xxx\",\"text\":\"A new Monthly Program Review document has been created in the Review/2024 folder, notifying slack-knowledge-and-tools-people-managers channel. \",\"webhook\":\"xxx\"}"
+            ScheduleExpressionTimezone: UTC
+ #      ComplexScheduleEvent:
+          # Type: ScheduleV2
+          # Properties:
+          #   ScheduleExpression: rate(1 minute)
+          #   FlexibleTimeWindow:
+          #     Mode: FLEXIBLE
+          #     MaximumWindowInMinutes: 5
+          #   StartDate: '2022-12-28T12:00:00.000Z'
+          #   EndDate: '2023-01-28T12:00:00.000Z'
+          #   ScheduleExpressionTimezone: UTC
+          #   RetryPolicy:
+          #     MaximumRetryAttempts: 5
+          #     MaximumEventAgeInSeconds: 300
+          #   DeadLetterConfig:
+          #     Type: SQS
+
+#      Environment:
+#       Variables:
+#        SLACK_WEBHOOK_URL: xxx
+#        QUIP_API_TOKEN: xxx
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+        - app.ts
+
+Outputs:
+  QuipGenerateSlackNotify:
+    Description:  Lambda Function ARN
+    Value: !GetAtt QuipGenerateSlackNotify.Arn
+  QuipGenerateSlackNotifyIamRole:
+    Description: Implicit IAM Role created for function
+    Value: !GetAtt QuipGenerateSlackNotifyRole.Arn
+  KmsKeyArn:
+    Description: The ARN of the KMS key used for encryption
+    Value: !GetAtt KMSKey.Arn
