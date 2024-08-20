@@ -1,24 +1,30 @@
 # QUIP TEMPLATE COPY WITH SLACK NOTIFCATION
-#Summary
+# Summary
 
-
-#Prerequisites 
+# Details
+## Prerequisites 
 See Quip for screenshots of how to set these up.
 1. You will need a QUIP token
 2. You will need to create a slack webhook (workflow) and get the URL. You will need one for every channel you wish to send messages to. It must accept the following paramaters to work: DocumentLink,DocumentName,text
 
 
-#Run unit tests on Lambda
+## Run unit tests on Lambda
+
+```bash
 cd quip-generate-slack-notify/
 npm run test
+```
 
-#Build and Deploy
+## Build and Deploy
+```bash
 cd ..
 sam build
 sam deploy # add --guided for first time SAM deployment in a region.
-
-#Event structure
-Event {
+```
+## Event structure
+Event interface
+```bash
+{
     webhook: string;
     quipToken: string;
     quipTemplateId: string;
@@ -29,8 +35,9 @@ Event {
     dayOfMonth?: number;
     text: string;
 }
-
+```
 Example Monthly review - we want the date to be for the current Month e.g. Monthly Program Review -  2024-08
+```json
 {
     "dayOfMonth": 0,
     "dayOfWeek": 2,
@@ -42,8 +49,9 @@ Example Monthly review - we want the date to be for the current Month e.g. Month
     "text": "A new Monthly Program Review document has been created in the ssimmo-test-doc-gen folder, notifying ssimmoo-test channel",
     "webhook": "XXX"
 }
-
+```
 Example weekly ops review - we want the date to be Next Tuesday (assumption we run it the week before on Thursday/Friday) e.g. :  Operational Excellence Review 2024-08-19
+```json
 {
     "dayOfMonth": 0,
     "dayOfWeek": 2,
@@ -55,11 +63,12 @@ Example weekly ops review - we want the date to be Next Tuesday (assumption we r
     "text": "A new Operational Excellence Review document has been created in the ssimmo-test-doc-gen folder, notifying ssimmoo-test channel",
     "webhook": "xxx"
 }
-
-#Manual TESTING of deployed lambda
+```
+## Manual TESTING of deployed lambda
+```bash
 sam remote invoke --stack-name new-quip-generator-with-slack-notification QuipGenerateSlackNotify --event-file events/monthlyopsEvent.json --region us-east-1
-
-#Adding events to scheduler
+```
+## Adding events to scheduler
 The scheduler sends events based on the schedule, the events contain the secrets and info needed to create the quip document and send a notification to slack.
 
 I use a VS code plugin to easily stringify the JSON object into the template. 
@@ -69,7 +78,7 @@ Add new events... simply use cli. After deploying get arn from QuipGenerateSlack
 You can also add them in the SAM template, see examples in template, these can be encrypted in scheduler but they are not encrypted in the template file, which is a concern e.g. when committing to a repo due to the secrets for quip and slack. Hence CLI maybe a better solution (or console).
 
 Note values used below are not real accounts/arns etc.
-
+```bash
 aws scheduler create-schedule \
     --name my-schedule \
     --schedule-expression "cron(35 17 ? * FRI *)" \
@@ -78,10 +87,10 @@ aws scheduler create-schedule \
     --schedule-expression-timezone "America/Vancouver" \
     --flexible-time-window '{"Mode": "OFF"} \
     --kms-key-arn arn:aws:kms:us-west-2:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+```
 
 
-
-#Apendix boilerplate SAM readme.
+# Apendix boilerplate SAM readme.
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
 
 - quip-generate-slack-notify - Code for the application's Lambda function written in TypeScript.
