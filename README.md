@@ -89,6 +89,7 @@ aws scheduler create-schedule \
     --kms-key-arn arn:aws:kms:us-west-2:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab'
 ```
 
+Or use the console https://us-east-1.console.aws.amazon.com/scheduler
 
 # Apendix boilerplate SAM readme.
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
